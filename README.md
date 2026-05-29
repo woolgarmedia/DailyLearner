@@ -1,56 +1,106 @@
-# Welcome to your Expo app 👋
+# Daily Learner
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal learning app: structured 60-day path through DaVinci Resolve, Photoshop, and YouTube craft for gaming first-impressions content. ~1 hour per day, with quizzes, exercises, and concrete daily deliverables.
 
-## Get started
+Built with Expo Router so it can be installed on any device via Expo Go or built natively, and updated over-the-air via EAS Update.
 
-1. Install dependencies
+## Stack
 
-   ```bash
-   npm install
-   ```
+- Expo SDK 56 / React Native 0.85
+- expo-router (file-based routes)
+- TypeScript
+- AsyncStorage for progress persistence
+- expo-updates for OTA
+- Google Fonts: Playfair Display, DM Sans, DM Mono
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Running locally
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then either scan the QR with Expo Go on Android, or press `a` to launch the Android emulator.
 
-### Other setup steps
+## First-time EAS setup
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+To wire this project up to your EAS account:
 
-## Learn more
+```bash
+# from C:/dev/DailyLearner
+npx eas login          # if not already logged in
+npx eas init           # creates the project on EAS and writes the project id back into app.json
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+`eas init` will set `extra.eas.projectId` and `updates.url` inside `app.json` automatically.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Pushing an OTA update
 
-## Join the community
+After making any JS-only change (UI, content, plan data — anything in `src/`):
 
-Join our community of developers creating universal apps.
+```bash
+npx eas update --branch production --message "Describe the change"
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The phone will pick up the update the next time it cold-starts the app (because `checkAutomatically` is set to `ON_LOAD`).
+
+## Building the Android APK / AAB for your phone
+
+You only need to do this once (and again any time you change native code, native dependencies, or `app.json` outside of `extra`/`updates`).
+
+```bash
+# Development build (install on phone, then JS updates come via `eas update`)
+npx eas build --profile preview --platform android
+
+# When the build finishes, EAS gives you a download link or QR code.
+# Install the APK on your phone, open it, and OTA updates take over from there.
+```
+
+## Project structure
+
+```
+src/
+├── app/
+│   ├── _layout.tsx              # Root stack, loads Google Fonts
+│   ├── (tabs)/
+│   │   ├── _layout.tsx          # Tab bar
+│   │   ├── index.tsx            # Learning Path
+│   │   ├── plan.tsx             # 60-Day Plan
+│   │   └── completed.tsx        # Completed Quizzes
+│   ├── topic/[id].tsx           # Topic detail
+│   ├── quiz/[id].tsx            # Quiz screen
+│   └── day/[num].tsx            # Day detail
+├── components/                  # Reusable UI (Card, Badge, Button, T, ProgressBar)
+├── constants/
+│   └── theme.ts                 # Palette, Fonts, Spacing, Radius
+├── data/
+│   ├── phases.ts                # Phase metadata
+│   ├── topics.ts                # 19 topics (steps, shortcuts, memory, tips)
+│   ├── quizzes.ts               # ~190 quiz questions
+│   └── plan.ts                  # 60-day plan with time blocks + deliverables
+└── store/
+    └── progress.ts              # AsyncStorage-backed progress store + useProgress hook
+```
+
+## Adding content over time
+
+- **New topics:** append to `src/data/topics.ts` and `src/data/quizzes.ts`, then push an OTA update — no rebuild needed.
+- **Plan changes:** edit `src/data/plan.ts`, push OTA.
+- **Visual tweaks:** edit `src/constants/theme.ts`, push OTA.
+
+Native config (`app.json` plugins, packages, permissions) requires a fresh `eas build`.
+
+## Storage
+
+All progress is in `AsyncStorage` under `daily_learner_state_v1`:
+
+```ts
+{
+  passedTopics: Record<string, true>,
+  attempts: Record<string, Array<{score, total, passed, date}>>,
+  completedDays: Record<number, true>,
+  currentDay: number
+}
+```
+
+No cloud sync. If you wipe the app, you lose progress — by design (local-first).
