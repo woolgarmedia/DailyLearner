@@ -51,6 +51,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c8cc21b9-a6f7-47b3-9bec-ff3afdf3acf6"
+      }
+    },
+    "owner": "tailorbyte"
   }
 }
