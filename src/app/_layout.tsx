@@ -13,11 +13,14 @@ import {
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { Palette } from '@/constants/theme';
+import { scheduleDailyReminder } from '@/lib/notifications';
+import { progressStore } from '@/store/progress';
+import { settingsStore } from '@/store/settings';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -31,6 +34,45 @@ export default function RootLayout() {
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
+
+  // Keep the scheduled notification's content fresh: refresh on app open, and
+  // whenever the user's current day changes. Notifications are local-only so
+  // skip on web where the underlying API isn't supported.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    let cancelled = false;
+    let lastDay = -1;
+
+    async function refresh() {
+      try {
+        await Promise.all([settingsStore.load(), progressStore.load()]);
+        if (cancelled) return;
+        if (settingsStore.getState().enabled) {
+          await scheduleDailyReminder();
+        }
+      } catch (e) {
+        console.warn('reminder refresh failed', e);
+      }
+    }
+
+    refresh();
+
+    const unsub = progressStore.subscribe((s) => {
+      if (s.currentDay !== lastDay) {
+        lastDay = s.currentDay;
+        if (settingsStore.getState().enabled) {
+          scheduleDailyReminder().catch((e) =>
+            console.warn('day-change reschedule failed', e),
+          );
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, []);
 
   if (!ready) {
     return <View style={{ flex: 1, backgroundColor: Palette.cream }} />;

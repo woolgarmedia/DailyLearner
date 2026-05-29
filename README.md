@@ -53,7 +53,12 @@ npx eas update --branch production --message "Describe the change"
 
 ## Building the Android APK / AAB for your phone
 
-You only need to do this once (and again any time you change native code, native dependencies, or `app.json` outside of `extra`/`updates`).
+You need to do this:
+- Once initially (to install the app)
+- Any time native dependencies are added or removed
+- Whenever `version` in `app.json` is bumped (since `runtimeVersion` is tied to `appVersion`)
+
+> ⚠️ **v1.1.0 requires a rebuild.** Daily reminders use `expo-notifications` and `@react-native-community/datetimepicker`, both of which are native modules. The bump from 1.0.0 → 1.1.0 ensures the OTA update for this feature is NOT delivered to the older 1.0.0 APK (which would crash on the new code). Build the v1.1.0 APK before expecting OTAs to work.
 
 ```bash
 # Development build (install on phone, then JS updates come via `eas update`)
