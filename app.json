@@ -17,7 +17,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.dailylearner.app"
     },
     "android": {
@@ -43,7 +43,7 @@
           "backgroundColor": "#F7F4EF",
           "android": {
             "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "imageWidth": 180
           }
         }
       ]

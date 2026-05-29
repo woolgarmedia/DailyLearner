@@ -36,13 +36,20 @@ npx eas init           # creates the project on EAS and writes the project id ba
 
 ## Pushing an OTA update
 
-After making any JS-only change (UI, content, plan data — anything in `src/`):
+**Automatic (via GitHub Actions):** every push to `main` runs `.github/workflows/eas-update.yml`, which type-checks the project and publishes an OTA update to the `production` channel. The phone picks it up on next cold start.
+
+To enable this, set one GitHub repo secret:
+
+1. Create a personal access token at https://expo.dev/settings/access-tokens (give it Update permissions for the `tailorbyte/daily-learner` project).
+2. In GitHub → Settings → Secrets and variables → Actions → New repository secret, name it `EXPO_TOKEN` and paste the token.
+
+The workflow skips when only docs, scripts, workflows, or `eas.json` change — so cosmetic README edits don't burn an OTA. You can also trigger it manually from the Actions tab via the "Run workflow" button.
+
+**Manual:** if you prefer a one-off publish without going through git:
 
 ```bash
 npx eas update --branch production --message "Describe the change"
 ```
-
-The phone will pick up the update the next time it cold-starts the app (because `checkAutomatically` is set to `ON_LOAD`).
 
 ## Building the Android APK / AAB for your phone
 
